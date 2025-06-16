@@ -58,7 +58,8 @@ def add_tags(pdf, document, page_streams):
         content_mapping['Nums'].append(i)
         content_mapping['Nums'].append(link_reference)
         annotation['StructParent'] = i
-        annotation['F'] = 2 ** (2 - 1)
+        if 'F' not in annotation:
+            annotation['F'] = 2 ** (2 - 1)
 
     # Add required metadata.
     pdf.catalog['ViewerPreferences'] = pydyf.Dictionary({'DisplayDocTitle': 'true'})
@@ -199,6 +200,20 @@ def _build_box_tree(box, parent, pdf, page_number, nums, links, tags):
     # Include link annotations.
     if box.link_annotation:
         annotation = box.link_annotation
+
+        pdf_f_attr = box.element.get('pdf_f')
+        pdf_f_value = None
+        if pdf_f_attr:
+            try:
+                pdf_f_value = int(pdf_f_attr)
+            except ValueError:
+                LOGGER.warning(
+                    f"Invalid 'pdf_f' attribute value '{pdf_f_attr}' for link."
+                    " Expected an integer."
+                )
+        if pdf_f_value is not None:
+            annotation['F'] = pdf_f_value
+
         object_reference = pydyf.Dictionary({
             'Type': '/OBJR',
             'Obj': annotation.reference,
